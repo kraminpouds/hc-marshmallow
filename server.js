@@ -91,7 +91,9 @@ if (!isProduction) {
   app.use(base, sirv('./dist/client', { extensions: [] }))
 }
 
-app.post('/xumu/password', passport.authenticate('local'));
+app.post('/xumu/password', passport.authenticate('local', {
+  successRedirect: '/xumu'
+}));
 
 // Serve HTML
 app.use('*', isAuthenticated, async (req, res) => {

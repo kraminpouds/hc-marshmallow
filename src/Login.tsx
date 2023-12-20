@@ -10,7 +10,7 @@ function Login() {
         try {
             // 发送登录请求到后端
             await axios.post('/xumu/password', { username, password });
-            window.location.href = '/xumu';
+            history.pushState(null, '', '/xumu');
         } catch (error) {
             // 处理登录失败的情况
             setErrorMessage('Incorrect username or password');

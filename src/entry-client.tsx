@@ -1,6 +1,6 @@
 import './index.css'
 import { StrictMode } from 'react';
-import { hydrateRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 import {
     createBrowserRouter,
     matchRoutes,
@@ -25,14 +25,21 @@ async function hydrate() {
         );
     }
 
-    let router = createBrowserRouter(routes);
-
-    hydrateRoot(
-        document.getElementById("root")!,
+    const router = createBrowserRouter(routes);
+    const container = document.getElementById("root");
+    const App = () => (
         <StrictMode>
             <RouterProvider router={router} fallbackElement={null} />
         </StrictMode>
-    );
+    )
+
+
+    if (import.meta.hot || !container?.innerText) {
+        const root = createRoot(container!);
+        root.render(<App />);
+    } else {
+        hydrateRoot(container!, <App />);
+    }
 }
 
 await hydrate();
