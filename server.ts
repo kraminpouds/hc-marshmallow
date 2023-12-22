@@ -1,9 +1,10 @@
 import fs from 'node:fs/promises'
 import express from 'express'
 import passport from 'passport'
-import LocalStrategy from 'passport-local'
+import {Strategy as LocalStrategy} from 'passport-local'
 import session from 'express-session'
 
+import routes from './src/api';
 // Constants
 const isProduction = process.env.NODE_ENV === 'production'
 const port = process.env.PORT || 5173
@@ -41,7 +42,7 @@ app.use(session({
 
 // 初始化Passport并使用session
 app.use(passport.initialize());
-app.use(passport.session({ }));
+app.use(passport.session());
 
 // Passport配置本地策略
 passport.use(new LocalStrategy({ },
@@ -95,6 +96,8 @@ if (!isProduction) {
 app.post('/xumu/password', passport.authenticate('local'), (req, res) => {
   res.status(200).end();
 });
+
+app.use(routes);
 
 // Serve HTML
 app.use('*', isAuthenticated, async (req, res) => {
