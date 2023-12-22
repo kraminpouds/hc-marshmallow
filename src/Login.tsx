@@ -1,20 +1,18 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const navigate = useNavigate();
 
-    const handleLogin = async () => {
-        try {
-            // 发送登录请求到后端
-            await axios.post('/xumu/password', { username, password });
-            history.pushState(null, '', '/xumu');
-        } catch (error) {
-            // 处理登录失败的情况
-            setErrorMessage('Incorrect username or password');
-        }
+    const handleLogin =  () => {
+         // 发送登录请求到后端
+       axios.post('/xumu/password', { username, password })
+            .then(() => navigate('/xumu'))
+            .catch(() => setErrorMessage('Incorrect username or password'));
     };
 
     return (

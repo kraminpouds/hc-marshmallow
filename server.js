@@ -13,6 +13,7 @@ const base = process.env.BASE || '/'
 const users = [
   { id: 1, username: 'hu', password: 'hu' },
   { id: 2, username: 'cao', password: 'cao' },
+  { id: 3, username: '1', password: '1' },
 ];
 
 
@@ -91,35 +92,47 @@ if (!isProduction) {
   app.use(base, sirv('./dist/client', { extensions: [] }))
 }
 
-app.post('/xumu/password', passport.authenticate('local', {
-  successRedirect: '/xumu'
-}));
+app.post('/xumu/password', passport.authenticate('local'), (req, res) => {
+  res.status(200).end();
+});
 
 // Serve HTML
 app.use('*', isAuthenticated, async (req, res) => {
   try {
-    const url = req.originalUrl
+    const url = req.originalUrl.replace(base, '')
 
     let template
     let render
     if (!isProduction) {
-      // Always read fresh template in development
+      // 1. Read index.html
       template = await fs.readFile('./index.html', 'utf-8')
+      // 2. Apply Vite HTML transforms. This injects the Vite HMR client,
+      //    and also applies HTML transforms from Vite plugins, e.g. global
+      //    preambles from @vitejs/plugin-react
       template = await vite.transformIndexHtml(url, template)
+      // 3. Load the server entry. ssrLoadModule automatically transforms
+      //    ESM source code to be usable in Node.js! There is no bundling
+      //    required, and provides efficient invalidation similar to HMR.
       render = (await vite.ssrLoadModule('/src/entry-server.tsx')).render
     } else {
       template = templateHtml
       render = (await import('./dist/server/entry-server.js')).render
     }
+    // 4. render the app HTML. This assumes entry-server.js's exported
+    //     `render` function calls appropriate framework SSR APIs,
+    //    e.g. ReactDOMServer.renderToString()
+    const rendered = await render(url, ssrManifest)
 
-    const rendered = await render(req)
-
+    // 5. Inject the app-rendered HTML into the template.
     const html = template
       .replace(`<!--app-head-->`, rendered.head ?? '')
       .replace(`<!--app-html-->`, rendered.html ?? '')
 
+    // 6. Send the rendered HTML back.
     res.status(200).set({ 'Content-Type': 'text/html' }).end(html)
   } catch (e) {
+    // If an error is caught, let Vite fix the stack trace so it maps back
+    // to your actual source code.
     vite?.ssrFixStacktrace(e)
     console.log(e.stack)
     res.status(500).end(e.stack)
