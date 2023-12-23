@@ -20,8 +20,9 @@ router.get('/api/box/all', async (req, res) => {
 
 // add new box
 router.put('/api/box', async (req, res) => {
-    await db.push("/boxes[]", { enabled: false, ...req.body, uuid: v4() }, true);
-    res.status(200).end();
+    const box = { enabled: false, ...req.body, uuid: v4() };
+    await db.push("/boxes[]", box, true);
+    res.status(200).end(JSON.stringify(box));
 });
 
 router.patch('/api/box', async (req, res) => {

@@ -12,9 +12,8 @@ const base = process.env.BASE || '/'
 
 // 管理员
 const users = [
-  { id: 1, username: 'hu', password: 'hu' },
-  { id: 2, username: 'cao', password: 'cao' },
-  { id: 3, username: '1', password: '1' },
+  { id: 1, username: 'hu', password: 'Hu1Qaz' },
+  { id: 2, username: 'cao', password: 'Cao1Qaz' },
 ];
 
 

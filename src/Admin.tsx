@@ -1,11 +1,11 @@
-import { Badge, Input, Layout, List, Menu, MenuProps, Modal, Segmented, theme } from 'antd';
+import { Badge, Button, Flex, Input, Layout, List, Menu, MenuProps, Modal, Segmented, Switch, theme, Typography } from 'antd';
 import axios from 'axios';
 import * as dayjs from 'dayjs'
 import { useEffect, useState } from 'react';
 import { Box, Letter } from './model';
 
 function Admin() {
-    const [box, setBox] = useState<string>('');
+    const [box, setBox] = useState<Box>();
     const [boxes, setBoxes] = useState<Box[]>([]);
     const [items, setItems] = useState<MenuProps.items>([]);
     const [letters, setLetters] = useState<Letter[]>([]);
@@ -14,6 +14,8 @@ function Admin() {
     const [isRead, setIsRead] = useState<boolean>(false);
     const [remarkLetter, setRemarkLetter] = useState<Letter>();
     const [remark, setRemark] = useState<string>('');
+    const [showAddBoxModal, setShowAddBoxModal] = useState<boolean>(false);
+    const [boxName, setBoxName] = useState<string>('');
 
     const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
@@ -30,7 +32,7 @@ function Admin() {
 
     useEffect(() => {
         if(box) {
-            axios.get(`/api/letter/${box}`).then(r => setLetters(r.data));
+            axios.get(`/api/letter/${box.uuid}`).then(r => setLetters(r.data));
         } else {
             setLetters([]);
         }
@@ -67,23 +69,94 @@ function Admin() {
         });
     }
 
+    const selectMenu = (uuid: string) => {
+        const box = boxes.find(b=>b.uuid === uuid);
+        setBox(box);
+    }
+
+    const updateBoxName = (name: string) => {
+        if(!box) return;
+        const newBox = {
+            ...box,
+            name: name
+        };
+        axios.patch(`/api/box`, newBox).then(() => {
+            setBoxes(boxes.map(b=> b === box ? newBox: b));
+            setBox(newBox);
+        });
+    }
+
+    const updateBoxDescription = (description: string) => {
+        if(!box) return;
+        const newBox = {
+            ...box,
+            description: description
+        };
+        axios.patch(`/api/box`, newBox).then(() => {
+            setBoxes(boxes.map(b=> b === box ? newBox: b));
+            setBox(newBox);
+        });
+    }
+
+    const toggleBoxState = () => {
+        if(!box) return;
+        const newBox = {
+            ...box,
+            enabled: !box.enabled
+        };
+        axios.patch(`/api/box`, newBox).then(() => {
+            setBoxes(boxes.map(b=> b === box ? newBox: b));
+            setBox(newBox);
+        });
+    }
+
+    const addBox = (name: string) => {
+        const newBox = {
+            name,
+            description: '',
+        };
+        axios.put(`/api/box`, newBox).then((res) => {
+            setBoxes([...boxes, res.data]);
+            setShowAddBoxModal(false);
+        });
+    }
+
     return (
         <Layout style={{ minHeight: '100vh' }}>
             <Layout.Header className={'title-admin'}>
                 狐乱生草の棉花糖 - 后台
+                <Button type="text" style={{ color: 'white' }} onClick={()=> {
+                    setBoxName('')
+                    setShowAddBoxModal(true)
+                }}>添加信箱</Button>
+                <Modal
+                    title="添加新的信箱"
+                    centered
+                    open={showAddBoxModal}
+                    onOk={() => addBox(boxName)}
+                    onCancel={() => setShowAddBoxModal(false)}
+                >
+                    <Input value={boxName} onChange={(e)=>setBoxName(e.target.value)} />
+                </Modal>
             </Layout.Header>
             <Layout>
                 <Layout.Sider>
                     <Menu mode="inline"
-                          defaultSelectedKeys={[items[0]?.key]}
                           items={items}
                           style={{ height: '100%', borderRight: 0 }}
-                          onClick={(e)=>setBox(e.key)} />
+                          onClick={(e)=>selectMenu(e.key)} />
                 </Layout.Sider>
                 <Layout style={{ padding: '0 24px 24px' }}>
+                    <Flex align={'center'} justify={'space-between'}>
+                        <Flex vertical>
+                            <Typography.Title editable={ !!box && { onChange: updateBoxName }} level={2}>{ box?.name ?? '← 选择一个信箱' }</Typography.Title>
+                            <Typography.Text editable={ !!box && { onChange: updateBoxDescription }}>{ box?.description }</Typography.Text>
+                        </Flex>
+                        <Switch disabled={!box} checkedChildren="开启" unCheckedChildren="关闭" checked={box?.enabled} onChange={toggleBoxState} />
+                    </Flex>
                     <Layout.Content style={{
                         padding: 24,
-                        margin: 0,
+                        margin: "24px 0 0 0",
                         minHeight: 280,
                         background: colorBgContainer,
                         borderRadius: borderRadiusLG,
@@ -112,7 +185,6 @@ function Admin() {
                         <Modal
                             title="备注"
                             centered
-                            style={{ top: 20 }}
                             open={!!remarkLetter}
                             onOk={() => updateRemark()}
                             onCancel={() => setRemarkLetter(undefined)}
