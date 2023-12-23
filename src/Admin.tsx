@@ -1,6 +1,6 @@
 import { Badge, Button, Flex, Input, Layout, List, Menu, MenuProps, Modal, Segmented, Switch, theme, Typography } from 'antd';
 import axios from 'axios';
-import * as dayjs from 'dayjs'
+import dayjs from 'dayjs'
 import { useEffect, useState } from 'react';
 import { Box, Letter } from './model';
 
