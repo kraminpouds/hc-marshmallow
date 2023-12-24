@@ -2,15 +2,18 @@ import { Button, Card,  Form, Flex, Input, Typography, notification } from 'antd
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Box, Letter } from './model';
+import { groupBy } from 'lodash-es';
 
 function Home() {
     const [box, setBox] = useState<Box>();
-    const [boxes, setBoxes] = useState<Box[]>([]);
+    const [boxes, setBoxes] = useState<{[key: string]: Box[]}>();
     const [loading, setLoading] = useState<boolean>(false);
     const [api, contextHolder] = notification.useNotification();
 
     useEffect(() => {
-        axios.get('/api/box').then(r => setBoxes(r.data));
+        axios.get('/api/box').then(r => {
+            setBoxes(groupBy(r.data, b=>b.owner));
+        });
     }, [])
 
     const onFinish = (value: Letter) => {
@@ -29,14 +32,37 @@ function Home() {
         <>
             <Typography.Title className="title">狐乱生草の棉花糖</Typography.Title>
             { !box &&
-                <Flex justify={'center'}  gap={8}>
-                    {
-                        boxes.map(box=>(
-                            <Card hoverable style={{ width: 240 }} onClick={() => setBox(box)} key={box.uuid}>
-                                <Card.Meta title={box.name} description={box.description}/>
-                            </Card>)
-                        )
-                    }
+                <Flex justify={'center'}  gap={64}>
+                    <div style={{ width: 736, textAlign: 'center' }}>
+                        <img src="/hu.png" style={{
+                            objectFit: 'cover',
+                            height: 240
+                        }}/>
+                        <Flex justify={'center'} gap={8} wrap={'wrap'}>
+                        {
+                            boxes && (boxes['狐']??[]).map(box=>(
+                                <Card hoverable style={{ width: 240, height: 120 }} onClick={() => setBox(box)} key={box.uuid}>
+                                    <Card.Meta title={box.name} description={box.description}/>
+                                </Card>)
+                            )
+                        }
+                        </Flex>
+                    </div>
+                    <div style={{ width: 736, textAlign: 'center'}}>
+                        <img src="/cao.png" style={{
+                            objectFit: 'cover',
+                            height: 240
+                        }} />
+                        <Flex justify={'center'} gap={8} wrap={'wrap'}>
+                            {
+                                boxes && (boxes['草']??[]).map(box=>(
+                                    <Card hoverable style={{ width: 240, height: 120 }} onClick={() => setBox(box)} key={box.uuid}>
+                                        <Card.Meta title={box.name} description={box.description}/>
+                                    </Card>)
+                                )
+                            }
+                        </Flex>
+                    </div>
                 </Flex>
             }
             { box &&

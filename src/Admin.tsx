@@ -1,8 +1,10 @@
-import { Badge, Button, Flex, Input, Layout, List, Menu, MenuProps, Modal, Segmented, Switch, theme, Typography } from 'antd';
+import { Badge, Button, Card, Flex, Input, Layout, List, Menu, MenuProps, Modal, Segmented, Select, Switch, theme, Typography } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs'
+import it from 'node:test';
 import { useEffect, useState } from 'react';
 import { Box, Letter } from './model';
+import { groupBy, orderBy } from 'lodash-es';
 
 function Admin() {
     const [box, setBox] = useState<Box>();
@@ -15,7 +17,9 @@ function Admin() {
     const [remarkLetter, setRemarkLetter] = useState<Letter>();
     const [remark, setRemark] = useState<string>('');
     const [showAddBoxModal, setShowAddBoxModal] = useState<boolean>(false);
+    const [showReviewBox, setShowReviewBox] = useState<boolean>(false);
     const [boxName, setBoxName] = useState<string>('');
+    const [boxOwner, setBoxOwner] = useState<string>('');
 
     const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
@@ -24,10 +28,16 @@ function Admin() {
     }, []);
 
     useEffect(() => {
-        setItems(boxes.map(d=>({
-            key: d.uuid,
-            label: d.name
-        })));
+        const data = groupBy(boxes, (b)=>b.owner??'未归类');
+        const keys = ['草','狐','未归类'];
+        const _items = Object.keys(groupBy(boxes, (b)=>b.owner??'未归类'))
+            .sort((a, b)=>keys.indexOf(a)-keys.indexOf(b))
+            .map(key=>({
+            label: key,
+            key,
+            children: data[key].map(b=>({ key: b.uuid, label: b.name}))
+        }));
+        setItems(orderBy(_items, ['owner'], ['asc']));
     }, [boxes]);
 
     useEffect(() => {
@@ -36,6 +46,7 @@ function Admin() {
         } else {
             setLetters([]);
         }
+        setShowReviewBox(false);
     }, [box]);
 
     useEffect(() => {
@@ -74,6 +85,18 @@ function Admin() {
         setBox(box);
     }
 
+    const updateBoxOwner = (owner: string) => {
+        if(!box) return;
+        const newBox = {
+            ...box,
+            owner: owner
+        };
+        axios.patch(`/api/box`, newBox).then(() => {
+            setBoxes(boxes.map(b=> b === box ? newBox: b));
+            setBox(newBox);
+        });
+    }
+
     const updateBoxName = (name: string) => {
         if(!box) return;
         const newBox = {
@@ -110,9 +133,10 @@ function Admin() {
         });
     }
 
-    const addBox = (name: string) => {
+    const addBox = () => {
         const newBox = {
-            name,
+            name: boxName,
+            owner: boxOwner,
             description: '',
         };
         axios.put(`/api/box`, newBox).then((res) => {
@@ -133,10 +157,14 @@ function Admin() {
                     title="添加新的信箱"
                     centered
                     open={showAddBoxModal}
-                    onOk={() => addBox(boxName)}
+                    onOk={() => addBox()}
                     onCancel={() => setShowAddBoxModal(false)}
                 >
-                    <Input value={boxName} onChange={(e)=>setBoxName(e.target.value)} />
+                    <Input addonBefore={(<Select style={{ width: 68 }} onChange={(e)=>setBoxOwner(e)}>
+                                <Option value="狐">狐</Option>
+                                <Option value="草">草</Option></Select>)}
+                           value={boxName}
+                           onChange={(e)=>setBoxName(e.target.value)} />
                 </Modal>
             </Layout.Header>
             <Layout>
@@ -153,6 +181,10 @@ function Admin() {
                             <Typography.Text editable={ !!box && { onChange: updateBoxDescription }}>{ box?.description }</Typography.Text>
                         </Flex>
                         <Switch disabled={!box} checkedChildren="开启" unCheckedChildren="关闭" checked={box?.enabled} onChange={toggleBoxState} />
+                        <Select style={{ width: 68 }} value={box?.owner} onChange={(e)=>updateBoxOwner(e)}>
+                            <Option value="狐">狐</Option>
+                            <Option value="草">草</Option>
+                        </Select>
                     </Flex>
                     <Layout.Content style={{
                         padding: 24,
@@ -161,36 +193,60 @@ function Admin() {
                         background: colorBgContainer,
                         borderRadius: borderRadiusLG,
                     }}>
-                        <Badge count={unreadItems.length}>
-                            <Segmented options={[
-                                { label: '已读', value: true},
-                                { label: '未读', value: false},
-                            ]} value={isRead} onChange={setIsRead} style={{ marginBottom: '8px'}} />
-                        </Badge>
-                        <List bordered
-                              pagination={!!letters.length}
-                              dataSource={isRead?readItems:unreadItems}
-                              itemLayout='vertical'
-                              renderItem={(item) => (
-                            <List.Item key={item.uuid} actions={[
-                                (<a onClick={()=>setRemarkLetter(item)} style={{marginTop: '8px'}}>备注</a>),
-                                (<a onClick={()=>toggleReadState(item)}>
-                                    {isRead?'标记未读':'标记已读'}
-                                </a>),
-                            ]}>
-                                <List.Item.Meta title={dayjs(item.createDate).format('YYYY年M月D日 H:mm:ss')} description={item.remark} />
-                                {item.content}
-                            </List.Item>
-                        )} />
-                        <Modal
+                        <Flex justify={'space-between'}>
+                            <Badge count={unreadItems.length}>
+                                <Segmented options={[
+                                    { label: '已读', value: true},
+                                    { label: '未读', value: false},
+                                ]} value={isRead} onChange={setIsRead} style={{ marginBottom: '8px'}} />
+                            </Badge>
+                            <Switch disabled={!box} checkedChildren="预览" unCheckedChildren="查看" checked={showReviewBox} onChange={(e)=>setShowReviewBox(e)} />
+                        </Flex>
+                        {!showReviewBox && (
+                            <>
+                            <List bordered
+                                pagination={!!letters.length}
+                                dataSource={isRead ? readItems : unreadItems}
+                                itemLayout='vertical'
+                                renderItem={(item) => (
+                                    <List.Item key={item.uuid} actions={[
+                                        (<a onClick={() => setRemarkLetter(item)} style={{ marginTop: '8px' }}>备注</a>),
+                                        (<a onClick={() => toggleReadState(item)}>
+                                            {isRead ? '标记未读' : '标记已读'}
+                                        </a>),
+                                    ]}>
+                                        <List.Item.Meta title={dayjs(item.createDate).format('YYYY年M月D日 H:mm:ss')}
+                                                        description={item.remark}/>
+                                        {item.content}
+                                    </List.Item>
+                                )}/>
+                            <Modal
                             title="备注"
                             centered
                             open={!!remarkLetter}
                             onOk={() => updateRemark()}
                             onCancel={() => setRemarkLetter(undefined)}
-                        >
+                            >
                             <Input value={remark} onChange={(e)=>setRemark(e.target.value)} />
-                        </Modal>
+                            </Modal>
+                            </>
+                            )}
+                        {showReviewBox && (<List pagination={!!letters.length}
+                                dataSource={isRead ? readItems : unreadItems}
+                                itemLayout='vertical'
+                                split={false}
+                                renderItem={(item) => (
+                                    <List.Item key={item.uuid}>
+                                        <Flex gap={32}>
+                                            <Card style={{ flex: 1 }}>
+                                                <Typography.Text>{item.content}</Typography.Text>
+                                            </Card>
+                                            <Card style={{ width: '250px' }} title={dayjs(item.createDate).format('YYYY年M月D日 H:mm:ss')}>
+                                                <Typography.Text>{item.remark}</Typography.Text>
+                                            </Card>
+                                        </Flex>
+                                    </List.Item>
+                                )}/>)}
                     </Layout.Content>
                 </Layout>
             </Layout>

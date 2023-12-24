@@ -3,6 +3,7 @@ export interface Box {
     name: string;
     description: string;
     enabled: boolean;
+    owner: string;
 }
 
 export interface Letter {
