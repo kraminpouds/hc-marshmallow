@@ -76,7 +76,6 @@ router.post('/api/box/disable', async (req, res) => {
 
 router.get('/api/letter/:boxUUID', async (req, res) => {
     try {
-        console.log('/api/letter', req.params.boxUUID);
         if (req.params.boxUUID) {
             const data = await db.getObjectDefault(`/letters/${req.params.boxUUID}`, []);
             res.status(200).end(JSON.stringify(data));
@@ -105,6 +104,22 @@ router.patch('/api/letter', async (req, res) => {
             const index = await db.getIndex(`/letters/${letter.boxUUID}`, letter.uuid, 'uuid');
             if(index>=0) {
                 await db.push(`/letters/${letter.boxUUID}[${index}]`, letter, true);
+            }
+            res.status(200).end();
+        } else {
+            res.status(400).end();
+        }
+    } catch (e) {
+        res.status(500).end(e);
+    }
+});
+
+router.delete('/api/letter/:boxUUID/:uuid', async (req, res) => {
+    try {
+        if (req.params.boxUUID && req.params.uuid) {
+            const index = await db.getIndex(`/letters/${req.params.boxUUID}`, req.params.uuid, 'uuid');
+            if(index>=0) {
+                await db.delete(`/letters/${req.params.boxUUID}[${index}]`);
             }
             res.status(200).end();
         } else {

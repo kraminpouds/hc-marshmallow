@@ -1,7 +1,6 @@
 import { Badge, Button, Card, Flex, Input, Layout, List, Menu, MenuProps, Modal, Segmented, Select, Switch, theme, Typography } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs'
-import it from 'node:test';
 import { useEffect, useState } from 'react';
 import { Box, Letter } from './model';
 import { groupBy, orderBy } from 'lodash-es';
@@ -20,7 +19,7 @@ function Admin() {
     const [showReviewBox, setShowReviewBox] = useState<boolean>(false);
     const [boxName, setBoxName] = useState<string>('');
     const [boxOwner, setBoxOwner] = useState<string>('');
-
+    const { confirm } = Modal;
     const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
     useEffect(() => {
@@ -77,6 +76,18 @@ function Admin() {
         axios.patch(`/api/letter`, newLetter).then(() => {
             setLetters([...letters.filter(l=>l!==remarkLetter), newLetter]);
             setRemarkLetter(undefined);
+        });
+    }
+
+    const deleteLetter = (letter: Letter) => {
+        confirm({
+            title: '确认删除么?',
+            content: letter.content,
+            onOk() {
+                axios.delete(`/api/letter/${letter.boxUUID}/${letter.uuid}`, ).then(() => {
+                    setLetters(letters.filter(l=>l!==letter));
+                });
+            },
         });
     }
 
@@ -214,6 +225,7 @@ function Admin() {
                                         (<a onClick={() => toggleReadState(item)}>
                                             {isRead ? '标记未读' : '标记已读'}
                                         </a>),
+                                        (<a onClick={() => deleteLetter(item)}>删除</a>)
                                     ]}>
                                         <List.Item.Meta title={dayjs(item.createDate).format('YYYY年M月D日 H:mm:ss')}
                                                         description={item.remark}/>
