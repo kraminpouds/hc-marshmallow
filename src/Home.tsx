@@ -31,8 +31,17 @@ function Home() {
     return (
         <>
             <Typography.Title className="title">狐乱生草の棉花糖</Typography.Title>
+            { !box && <Flex justify={'center'} gap={8} wrap={'wrap'}>
+                {
+                    boxes && (boxes['狐草综合'] ?? []).map(box => (
+                        <Card hoverable style={{ width: 240, height: 120 }} onClick={() => setBox(box)} key={box.uuid}>
+                            <Card.Meta title={box.name} description={box.description}/>
+                        </Card>)
+                    )
+                }
+            </Flex>}
             { !box &&
-                <Flex justify={'center'}  gap={64}>
+                <Flex justify={'center'}  gap={64} wrap={'wrap'} style={{marginTop:'2em'}}>
                     <div style={{ width: 736, textAlign: 'center' }}>
                         <img src="/hu.png" style={{
                             objectFit: 'cover',
@@ -72,8 +81,8 @@ function Home() {
                         <Form.Item name="boxUUID" hidden initialValue={box.uuid}>
                             <Input />
                         </Form.Item>
-                        <Form.Item name="content" rules={[{ required: true, message: '请输入你要说的话' }]}>
-                            <Input.TextArea style={{ width: 640, height: 480, resize: 'none' }} showCount maxLength={300} />
+                        <Form.Item name="content" rules={[{ required: true, message: '请输入你要说的话' }]} style={{ width: '100%', maxWidth: 640 }}>
+                            <Input.TextArea style={{ width: '100%', height: 480, resize: 'none' }} showCount maxLength={300} />
                         </Form.Item>
                         <Flex gap={20}>
                             <Button type="primary" htmlType="submit" loading={loading} >提交</Button>

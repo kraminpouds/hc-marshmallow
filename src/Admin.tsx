@@ -21,6 +21,8 @@ function Admin() {
     const [boxOwner, setBoxOwner] = useState<string>('');
     const { confirm } = Modal;
     const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
+    const boxOwners = ['狐草综合', '草','狐','未归类'];
+
 
     useEffect(() => {
         axios.get('/api/box/all').then(r => setBoxes(r.data));
@@ -28,9 +30,8 @@ function Admin() {
 
     useEffect(() => {
         const data = groupBy(boxes, (b)=>b.owner??'未归类');
-        const keys = ['草','狐','未归类'];
         const _items = Object.keys(groupBy(boxes, (b)=>b.owner??'未归类'))
-            .sort((a, b)=>keys.indexOf(a)-keys.indexOf(b))
+            .sort((a, b)=>boxOwners.indexOf(a)-boxOwners.indexOf(b))
             .map(key=>({
             label: key,
             key,
@@ -171,9 +172,8 @@ function Admin() {
                     onOk={() => addBox()}
                     onCancel={() => setShowAddBoxModal(false)}
                 >
-                    <Input addonBefore={(<Select style={{ width: 68 }} onChange={(e)=>setBoxOwner(e)}>
-                                <Option value="狐">狐</Option>
-                                <Option value="草">草</Option></Select>)}
+                    <Input addonBefore={(<Select style={{ width: 98 }} onChange={(e)=>setBoxOwner(e)}>
+                        {boxOwners.map((t,i)=>(<Option value={t} key={i}>{t}</Option>))}</Select>)}
                            value={boxName}
                            onChange={(e)=>setBoxName(e.target.value)} />
                 </Modal>
@@ -192,9 +192,8 @@ function Admin() {
                             <Typography.Text editable={ !!box && { onChange: updateBoxDescription }}>{ box?.description }</Typography.Text>
                         </Flex>
                         <Switch disabled={!box} checkedChildren="开启" unCheckedChildren="关闭" checked={box?.enabled} onChange={toggleBoxState} />
-                        <Select style={{ width: 68 }} value={box?.owner} onChange={(e)=>updateBoxOwner(e)}>
-                            <Option value="狐">狐</Option>
-                            <Option value="草">草</Option>
+                        <Select style={{ width: 98 }} value={box?.owner} onChange={(e)=>updateBoxOwner(e)}>
+                            {boxOwners.map((t,i)=>(<Option value={t} key={i}>{t}</Option>))}
                         </Select>
                     </Flex>
                     <Layout.Content style={{
