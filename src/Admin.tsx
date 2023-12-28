@@ -242,17 +242,21 @@ function Admin() {
                             </Modal>
                             </>
                             )}
-                        {showReviewBox && (<List pagination={!!letters.length}
+                        {showReviewBox && (<List pagination={!!letters.length && {pageSize:1} }
                                 dataSource={isRead ? readItems : unreadItems}
                                 itemLayout='vertical'
                                 split={false}
                                 renderItem={(item) => (
                                     <List.Item key={item.uuid}>
-                                        <Flex gap={32}>
-                                            <Card style={{ flex: 1 }}>
-                                                <Typography.Text>{item.content}</Typography.Text>
+                                        <Flex gap={32}  justify={'space-around'}>
+                                            <Card style={{ width: '600px', height: '600px' }}>
+                                                <Typography.Text style={{ fontSize: 20 }}>{item.content}</Typography.Text>
                                             </Card>
-                                            <Card style={{ width: '250px' }} title={dayjs(item.createDate).format('YYYY年M月D日 H:mm:ss')}>
+                                            <Card style={{ width: '250px' }} title={dayjs(item.createDate).format('YYYY年M月D日 H:mm:ss')} actions={[
+                                                (<a onClick={() => toggleReadState(item)}>
+                                                    {isRead ? '标记未读' : '标记已读'}
+                                                </a>)
+                                            ]}>
                                                 <Typography.Text>{item.remark}</Typography.Text>
                                             </Card>
                                         </Flex>
